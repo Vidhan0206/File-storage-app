@@ -11,7 +11,7 @@ export async function GET() {
     const { blobs } = await list()
     
     const files = blobs.map(blob => ({
-      id: blob.pathname,
+      id: blob.url,
       name: blob.pathname.split('/').pop() || 'Unknown',
       url: blob.url,
       size: blob.size,

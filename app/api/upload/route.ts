@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     })
 
     const fileData = {
-      id: filePath,
+      id: blob.url,
       name: file.name,
       url: blob.url,
       size: file.size,
