@@ -14,7 +14,7 @@ export async function GET() {
     }
 
     console.log('Fetching files from blob storage...')
-    const { blobs } = await list()
+    const { blobs } = await list({ token: process.env.BLOB_READ_WRITE_TOKEN })
     console.log(`Found ${blobs.length} blobs in storage`)
     console.log('Blob details:', blobs.map(b => ({ 
       url: b.url, 
