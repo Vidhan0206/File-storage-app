@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { list } from '@vercel/blob'
 
 export async function GET() {
@@ -16,8 +16,7 @@ export async function GET() {
       url: blob.url,
       size: blob.size,
       type: 'application/octet-stream',
-      uploadedAt: blob.uploadedAt.toISOString(),
-      blobUrl: blob.url
+      uploadedAt: blob.uploadedAt.toISOString()
     }))
 
     return NextResponse.json(files)

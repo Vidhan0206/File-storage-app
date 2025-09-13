@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
-import { Upload, X, Calendar } from 'lucide-react'
+import { Upload, Calendar } from 'lucide-react'
 import { FileData } from '@/types/file'
 
 interface FileUploadProps {

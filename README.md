@@ -83,19 +83,20 @@ A modern, responsive file storage application built with Next.js 14, featuring c
 
 ```
 file-storage-app/
-├── src/
-│   ├── app/
-│   │   ├── api/
-│   │   │   ├── files/
-│   │   │   └── upload/
-│   │   ├── globals.css
-│   │   ├── layout.tsx
-│   │   └── page.tsx
-│   └── components/
-│       ├── FileUpload.tsx
-│       ├── CalendarView.tsx
-│       └── FileList.tsx
-├── public/
+├── app/
+│   ├── api/
+│   │   ├── files/
+│   │   │   └── [id]/
+│   │   └── upload/
+│   ├── globals.css
+│   ├── layout.tsx
+│   └── page.tsx
+├── components/
+│   ├── FileUpload.tsx
+│   ├── CalendarView.tsx
+│   └── FileList.tsx
+├── types/
+│   └── file.ts
 ├── package.json
 ├── tailwind.config.ts
 ├── tsconfig.json

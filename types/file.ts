@@ -5,5 +5,4 @@ export interface FileData {
   size: number
   type: string
   uploadedAt: string
-  blobUrl: string
 }

@@ -36,8 +36,7 @@ export async function POST(request: NextRequest) {
       url: blob.url,
       size: file.size,
       type: file.type,
-      uploadedAt: uploadDate.toISOString(),
-      blobUrl: blob.url
+      uploadedAt: uploadDate.toISOString()
     }
 
     return NextResponse.json(fileData)

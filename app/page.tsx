@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Calendar, Upload, File, Download, Trash2, Calendar as CalendarIcon } from 'lucide-react'
+import { Calendar, Upload, File, Calendar as CalendarIcon } from 'lucide-react'
 import FileUpload from '@/components/FileUpload'
 import CalendarView from '@/components/CalendarView'
 import FileList from '@/components/FileList'
