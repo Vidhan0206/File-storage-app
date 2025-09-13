@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Calendar, Upload, File, Calendar as CalendarIcon } from 'lucide-react'
+import { Calendar, Upload, File, Calendar as CalendarIcon, RefreshCw } from 'lucide-react'
 import FileUpload from '@/components/FileUpload'
 import CalendarView from '@/components/CalendarView'
 import FileList from '@/components/FileList'
@@ -19,19 +19,21 @@ function HomeContent() {
     loadFiles()
   }, [])
 
-  const loadFiles = async () => {
+  const loadFiles = async (showNotification = true) => {
     try {
       setLoading(true)
       const response = await fetch('/api/files')
       if (response.ok) {
         const data = await response.json()
         setFiles(data)
-        addNotification({
-          type: 'info',
-          title: 'Files Loaded',
-          message: `Loaded ${data.length} files successfully`,
-          duration: 3000
-        })
+        if (showNotification) {
+          addNotification({
+            type: 'info',
+            title: 'Files Loaded',
+            message: `Loaded ${data.length} files successfully`,
+            duration: 3000
+          })
+        }
       } else {
         addNotification({
           type: 'error',
@@ -64,20 +66,37 @@ function HomeContent() {
   }
 
   const handleFileDelete = async (fileId: string) => {
+    const fileToDelete = files.find(f => f.id === fileId)
+    
     try {
       const response = await fetch(`/api/files/${encodeURIComponent(fileId)}`, {
         method: 'DELETE',
       })
 
       if (response.ok) {
-        const fileToDelete = files.find(f => f.id === fileId)
-        setFiles(prev => prev.filter(file => file.id !== fileId))
-        addNotification({
-          type: 'success',
-          title: 'File Deleted',
-          message: `${fileToDelete?.name || 'File'} has been deleted successfully`,
-          duration: 4000
-        })
+        const result = await response.json()
+        
+        // Only update UI if deletion was actually successful
+        if (result.success) {
+          setFiles(prev => prev.filter(file => file.id !== fileId))
+          addNotification({
+            type: 'success',
+            title: 'File Deleted',
+            message: `${fileToDelete?.name || 'File'} has been deleted successfully`,
+            duration: 4000
+          })
+          // Refresh files from storage to ensure consistency
+          setTimeout(() => {
+            loadFiles(false) // Don't show notification for this refresh
+          }, 1000)
+        } else {
+          addNotification({
+            type: 'error',
+            title: 'Delete Failed',
+            message: 'File deletion was not successful',
+            duration: 5000
+          })
+        }
       } else {
         const errorData = await response.json()
         addNotification({
@@ -125,6 +144,15 @@ function HomeContent() {
               <h1 className="text-xl font-semibold text-gray-900">File Storage</h1>
             </div>
             <div className="flex items-center space-x-4">
+              <button
+                onClick={() => loadFiles()}
+                disabled={loading}
+                className="flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Refresh files"
+              >
+                <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                <span>Refresh</span>
+              </button>
               <button
                 onClick={() => setView('calendar')}
                 className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium ${
