@@ -19,40 +19,12 @@ function HomeContent() {
     loadFiles()
   }, [])
 
-  // Auto-refresh files when page becomes visible (after refresh)
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        console.log('Page became visible, refreshing files...')
-        loadFiles(false) // Don't show notification for auto-refresh
-      }
-    }
-
-    const handleFocus = () => {
-      console.log('Window focused, refreshing files...')
-      loadFiles(false) // Don't show notification for auto-refresh
-    }
-
-    // Only add listeners if we're in the browser
-    if (typeof window !== 'undefined') {
-      document.addEventListener('visibilitychange', handleVisibilityChange)
-      window.addEventListener('focus', handleFocus)
-      
-      return () => {
-        document.removeEventListener('visibilitychange', handleVisibilityChange)
-        window.removeEventListener('focus', handleFocus)
-      }
-    }
-  }, [])
-
-  const loadFiles = async (showNotification = true, retryCount = 0) => {
+  const loadFiles = async (showNotification = false, retryCount = 0) => {
     try {
       setLoading(true)
       console.log('Loading files from storage...')
       
-      // Add cache-busting parameter to prevent stale data
-      const cacheBuster = `?t=${Date.now()}`
-      const response = await fetch(`/api/files${cacheBuster}`, {
+      const response = await fetch('/api/files', {
         cache: 'no-store',
         headers: {
           'Cache-Control': 'no-cache',
@@ -66,17 +38,7 @@ function HomeContent() {
       if (data.success && data.files) {
         console.log('Setting files:', data.files.length, 'files')
         setFiles(data.files)
-        
-        if (showNotification) {
-          addNotification({
-            type: 'info',
-            title: 'Files Loaded',
-            message: `Loaded ${data.files.length} files successfully`,
-            duration: 3000
-          })
-        }
       } else {
-        // Handle API error response
         const errorMessage = data.error || 'Failed to load files from storage'
         console.error('API error:', errorMessage)
         
@@ -87,7 +49,6 @@ function HomeContent() {
           duration: 5000
         })
         
-        // If it's a configuration error, show helpful message
         if (errorMessage.includes('not configured')) {
           addNotification({
             type: 'error',
@@ -100,7 +61,6 @@ function HomeContent() {
     } catch (error) {
       console.error('Error loading files:', error)
       
-      // Retry once if it's a network error and we haven't retried yet
       if (retryCount === 0) {
         console.log('Retrying file load...')
         setTimeout(() => loadFiles(showNotification, 1), 1000)
@@ -118,15 +78,10 @@ function HomeContent() {
     }
   }
 
-  const handleFileUpload = (newFile: FileData) => {
+  const handleFileUpload = async (newFile: FileData) => {
     console.log('handleFileUpload called with:', newFile)
-    console.log('Current files before adding:', files.length)
     
-    setFiles(prev => {
-      const updated = [newFile, ...prev]
-      console.log('Files after adding new file:', updated.length)
-      return updated
-    })
+    await loadFiles(false)
     
     addNotification({
       type: 'success',
@@ -135,7 +90,6 @@ function HomeContent() {
       duration: 4000
     })
   }
-
 
   const filteredFiles = files.filter((file: FileData) => {
     const fileDate = new Date(file.uploadedAt)
