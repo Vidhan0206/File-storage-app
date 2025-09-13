@@ -15,7 +15,7 @@ export async function GET() {
       name: blob.pathname.split('/').pop() || 'Unknown',
       url: blob.url,
       size: blob.size,
-      type: (blob as any).contentType || 'application/octet-stream',
+      type: 'application/octet-stream',
       uploadedAt: blob.uploadedAt.toISOString(),
       blobUrl: blob.url
     }))
