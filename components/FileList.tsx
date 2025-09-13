@@ -8,9 +8,10 @@ import { FileData } from '@/types/file'
 interface FileListProps {
   files: FileData[]
   onFileDelete: (fileId: string) => void
+  deletingFiles: Set<string>
 }
 
-export default function FileList({ files, onFileDelete }: FileListProps) {
+export default function FileList({ files, onFileDelete, deletingFiles }: FileListProps) {
   const [searchTerm, setSearchTerm] = useState('')
   const [sortBy, setSortBy] = useState<'name' | 'date' | 'size'>('date')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
@@ -152,10 +153,15 @@ export default function FileList({ files, onFileDelete }: FileListProps) {
                   </button>
                   <button
                     onClick={() => handleFileDelete(file.id)}
-                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
-                    title="Delete"
+                    disabled={deletingFiles.has(file.id)}
+                    className={`p-2 rounded-md transition-colors ${
+                      deletingFiles.has(file.id)
+                        ? 'text-gray-300 cursor-not-allowed'
+                        : 'text-gray-400 hover:text-red-600 hover:bg-red-50'
+                    }`}
+                    title={deletingFiles.has(file.id) ? 'Deleting...' : 'Delete'}
                   >
-                    <Trash2 className="h-5 w-5" />
+                    <Trash2 className={`h-5 w-5 ${deletingFiles.has(file.id) ? 'animate-pulse' : ''}`} />
                   </button>
                 </div>
               </div>

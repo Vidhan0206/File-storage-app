@@ -36,24 +36,46 @@ export async function DELETE(
     
     console.log('File deleted successfully:', result)
     
-    // Verify the deletion was successful by trying to access the file
-    try {
-      await head(fileUrl)
-      // If we can still access the file, deletion failed
-      console.error('File still exists after deletion attempt')
-      return NextResponse.json({ 
-        success: false,
-        error: 'File deletion verification failed - file still exists',
-        result 
-      }, { status: 500 })
-    } catch (verifyError) {
-      // File is successfully deleted (we can't access it anymore)
-      console.log('File deletion verified - file no longer accessible')
+    // Verify the deletion was successful with multiple attempts
+    let verificationPassed = false
+    const maxAttempts = 3
+    
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      // Wait a bit for deletion propagation
+      await new Promise(resolve => setTimeout(resolve, 500 * attempt))
+      
+      try {
+        await head(fileUrl)
+        // If we can still access the file, deletion failed
+        console.log(`Verification attempt ${attempt}: File still exists`)
+        if (attempt === maxAttempts) {
+          console.error('File still exists after all verification attempts')
+          return NextResponse.json({ 
+            success: false,
+            error: 'File deletion verification failed - file still exists after multiple attempts',
+            result 
+          }, { status: 500 })
+        }
+      } catch (verifyError) {
+        // File is successfully deleted (we can't access it anymore)
+        console.log(`Verification attempt ${attempt}: File deletion confirmed`)
+        verificationPassed = true
+        break
+      }
+    }
+    
+    if (verificationPassed) {
       return NextResponse.json({ 
         success: true, 
         result,
         message: 'File deleted successfully from storage'
       })
+    } else {
+      return NextResponse.json({ 
+        success: false,
+        error: 'File deletion verification failed',
+        result 
+      }, { status: 500 })
     }
   } catch (error) {
     console.error('Error deleting file:', error)

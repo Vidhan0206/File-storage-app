@@ -13,6 +13,7 @@ function HomeContent() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
   const [view, setView] = useState<'calendar' | 'list'>('calendar')
   const [loading, setLoading] = useState(true)
+  const [deletingFiles, setDeletingFiles] = useState<Set<string>>(new Set())
   const { addNotification } = useNotification()
 
   useEffect(() => {
@@ -25,12 +26,16 @@ function HomeContent() {
       const response = await fetch('/api/files')
       if (response.ok) {
         const data = await response.json()
-        setFiles(data)
+        
+        // Filter out any files that are currently being deleted
+        const filteredData = data.filter((file: FileData) => !deletingFiles.has(file.id))
+        
+        setFiles(filteredData)
         if (showNotification) {
           addNotification({
             type: 'info',
             title: 'Files Loaded',
-            message: `Loaded ${data.length} files successfully`,
+            message: `Loaded ${filteredData.length} files successfully`,
             duration: 3000
           })
         }
@@ -81,6 +86,33 @@ function HomeContent() {
   const handleFileDelete = async (fileId: string) => {
     const fileToDelete = files.find(f => f.id === fileId)
     
+    // Prevent multiple deletion attempts
+    if (deletingFiles.has(fileId)) {
+      return
+    }
+    
+    setDeletingFiles(prev => new Set(prev).add(fileId))
+    
+    // IMMEDIATELY remove from UI for instant feedback
+    setFiles(prev => prev.filter(file => file.id !== fileId))
+    
+    // Add a timeout to clean up deleting state in case of issues
+    const cleanupTimeout = setTimeout(() => {
+      setDeletingFiles(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(fileId)
+        return newSet
+      })
+    }, 10000) // 10 second timeout
+    
+    // Show immediate feedback that deletion is in progress
+    addNotification({
+      type: 'info',
+      title: 'Deleting File',
+      message: `Deleting ${fileToDelete?.name || 'file'}...`,
+      duration: 2000
+    })
+    
     try {
       const response = await fetch(`/api/files/${encodeURIComponent(fileId)}`, {
         method: 'DELETE',
@@ -89,9 +121,7 @@ function HomeContent() {
       if (response.ok) {
         const result = await response.json()
         
-        // Only update UI if deletion was actually successful
         if (result.success) {
-          setFiles(prev => prev.filter(file => file.id !== fileId))
           addNotification({
             type: 'success',
             title: 'File Deleted',
@@ -101,16 +131,26 @@ function HomeContent() {
           // Refresh files from storage to ensure consistency
           setTimeout(() => {
             loadFiles(false) // Don't show notification for this refresh
-          }, 1000)
+            // Clean up deleting state after refresh
+            setDeletingFiles(prev => {
+              const newSet = new Set(prev)
+              newSet.delete(fileId)
+              return newSet
+            })
+          }, 2000)
         } else {
+          // If deletion failed, add the file back to the UI
+          setFiles(prev => [fileToDelete!, ...prev])
           addNotification({
             type: 'error',
             title: 'Delete Failed',
-            message: 'File deletion was not successful',
+            message: result.error || 'File deletion was not successful',
             duration: 5000
           })
         }
       } else {
+        // If deletion failed, add the file back to the UI
+        setFiles(prev => [fileToDelete!, ...prev])
         const errorData = await response.json()
         addNotification({
           type: 'error',
@@ -120,12 +160,22 @@ function HomeContent() {
         })
       }
     } catch (error) {
+      // If deletion failed, add the file back to the UI
+      setFiles(prev => [fileToDelete!, ...prev])
       console.error('Error deleting file:', error)
       addNotification({
         type: 'error',
         title: 'Delete Failed',
         message: 'Network error while deleting file',
         duration: 5000
+      })
+    } finally {
+      // Clear the timeout and remove from deleting set
+      clearTimeout(cleanupTimeout)
+      setDeletingFiles(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(fileId)
+        return newSet
       })
     }
   }
@@ -206,11 +256,13 @@ function HomeContent() {
             selectedDate={selectedDate}
             onDateSelect={setSelectedDate}
             onFileDelete={handleFileDelete}
+            deletingFiles={deletingFiles}
           />
         ) : (
           <FileList
             files={files}
             onFileDelete={handleFileDelete}
+            deletingFiles={deletingFiles}
           />
         )}
       </main>

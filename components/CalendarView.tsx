@@ -10,9 +10,10 @@ interface CalendarViewProps {
   selectedDate: Date
   onDateSelect: (date: Date) => void
   onFileDelete: (fileId: string) => void
+  deletingFiles: Set<string>
 }
 
-export default function CalendarView({ files, selectedDate, onDateSelect, onFileDelete }: CalendarViewProps) {
+export default function CalendarView({ files, selectedDate, onDateSelect, onFileDelete, deletingFiles }: CalendarViewProps) {
   const [currentMonth, setCurrentMonth] = useState(selectedDate)
 
   const monthStart = startOfMonth(currentMonth)
@@ -163,10 +164,15 @@ export default function CalendarView({ files, selectedDate, onDateSelect, onFile
                       </button>
                       <button
                         onClick={() => handleFileDelete(file.id)}
-                        className="p-1 text-gray-400 hover:text-red-600 transition-colors"
-                        title="Delete"
+                        disabled={deletingFiles.has(file.id)}
+                        className={`p-1 transition-colors ${
+                          deletingFiles.has(file.id)
+                            ? 'text-gray-300 cursor-not-allowed'
+                            : 'text-gray-400 hover:text-red-600'
+                        }`}
+                        title={deletingFiles.has(file.id) ? 'Deleting...' : 'Delete'}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className={`h-4 w-4 ${deletingFiles.has(file.id) ? 'animate-pulse' : ''}`} />
                       </button>
                     </div>
                   </div>
