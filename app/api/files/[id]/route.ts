@@ -5,14 +5,14 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const fileUrl = decodeURIComponent(params.id)
+  
   try {
     // Check if BLOB_READ_WRITE_TOKEN is available
     if (!process.env.BLOB_READ_WRITE_TOKEN) {
       console.error('BLOB_READ_WRITE_TOKEN not found')
       return NextResponse.json({ error: 'Blob storage not configured' }, { status: 503 })
     }
-
-    const fileUrl = decodeURIComponent(params.id)
     
     console.log('Attempting to delete file:', fileUrl)
     console.log('Token available:', !!process.env.BLOB_READ_WRITE_TOKEN)
