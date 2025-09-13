@@ -6,12 +6,17 @@ export async function GET() {
     // Check if BLOB_READ_WRITE_TOKEN is available
     if (!process.env.BLOB_READ_WRITE_TOKEN) {
       console.log('BLOB_READ_WRITE_TOKEN not found, returning empty array')
-      return NextResponse.json([])
+      return NextResponse.json({
+        success: false,
+        error: 'Blob storage not configured',
+        files: []
+      })
     }
 
     console.log('Fetching files from blob storage...')
     const { blobs } = await list()
     console.log(`Found ${blobs.length} blobs in storage`)
+    console.log('Blob details:', blobs.map(b => ({ url: b.url, pathname: b.pathname, size: b.size })))
     
     const files = blobs.map(blob => {
       // Extract file extension to determine MIME type
@@ -67,9 +72,17 @@ export async function GET() {
     })
 
     console.log(`Returning ${files.length} files to client`)
-    return NextResponse.json(files)
+    return NextResponse.json({
+      success: true,
+      files: files
+    })
   } catch (error) {
     console.error('Error fetching files:', error)
-    return NextResponse.json([])
+    return NextResponse.json({
+      success: false,
+      error: 'Failed to fetch files',
+      details: error instanceof Error ? error.message : 'Unknown error',
+      files: []
+    })
   }
 }

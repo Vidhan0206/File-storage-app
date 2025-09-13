@@ -5,7 +5,11 @@ export async function POST(request: NextRequest) {
   try {
     // Check if BLOB_READ_WRITE_TOKEN is available
     if (!process.env.BLOB_READ_WRITE_TOKEN) {
-      return NextResponse.json({ error: 'Blob storage not configured' }, { status: 503 })
+      console.error('BLOB_READ_WRITE_TOKEN not found')
+      return NextResponse.json({ 
+        success: false,
+        error: 'Blob storage not configured. Please set BLOB_READ_WRITE_TOKEN in your environment variables.' 
+      }, { status: 503 })
     }
 
     const formData = await request.formData()
@@ -13,18 +17,17 @@ export async function POST(request: NextRequest) {
     const date = formData.get('date') as string
 
     if (!file) {
-      return NextResponse.json({ error: 'No file provided' }, { status: 400 })
+      return NextResponse.json({ 
+        success: false,
+        error: 'No file provided' 
+      }, { status: 400 })
     }
 
-    // Create a date-based folder structure
+    // Create a simple file path with timestamp
     const uploadDate = date ? new Date(date) : new Date()
-    const year = uploadDate.getFullYear()
-    const month = String(uploadDate.getMonth() + 1).padStart(2, '0')
-    const day = String(uploadDate.getDate()).padStart(2, '0')
-    
-    const folderPath = `uploads/${year}/${month}/${day}`
-    const fileName = `${Date.now()}-${file.name}`
-    const filePath = `${folderPath}/${fileName}`
+    const timestamp = Date.now()
+    const fileName = `${timestamp}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`
+    const filePath = `uploads/${fileName}`
 
     console.log('Uploading file:', {
       originalName: file.name,
@@ -47,14 +50,21 @@ export async function POST(request: NextRequest) {
       id: blob.url,
       name: file.name,
       url: blob.url,
-      size: file.size, // Use original file size, not blob.size
+      size: file.size,
       type: file.type,
       uploadedAt: uploadDate.toISOString()
     }
 
-    return NextResponse.json(fileData)
+    return NextResponse.json({
+      success: true,
+      ...fileData
+    })
   } catch (error) {
     console.error('Error uploading file:', error)
-    return NextResponse.json({ error: 'Failed to upload file' }, { status: 500 })
+    return NextResponse.json({ 
+      success: false,
+      error: 'Failed to upload file',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 })
   }
 }

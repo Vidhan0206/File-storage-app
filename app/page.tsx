@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Calendar, Upload, File, Calendar as CalendarIcon, RefreshCw } from 'lucide-react'
+import { Calendar, Upload, File, Calendar as CalendarIcon } from 'lucide-react'
 import FileUpload from '@/components/FileUpload'
 import CalendarView from '@/components/CalendarView'
 import FileList from '@/components/FileList'
@@ -20,34 +20,45 @@ function HomeContent() {
     loadFiles()
   }, [])
 
-  const loadFiles = async (showNotification = true, retryCount = 0, isRefresh = false) => {
+  // Auto-refresh files when page becomes visible (after refresh)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('Page became visible, refreshing files...')
+        loadFiles(false) // Don't show notification for auto-refresh
+      }
+    }
+
+    const handleFocus = () => {
+      console.log('Window focused, refreshing files...')
+      loadFiles(false) // Don't show notification for auto-refresh
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('focus', handleFocus)
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('focus', handleFocus)
+    }
+  }, [])
+
+  const loadFiles = async (showNotification = true, retryCount = 0) => {
     try {
       setLoading(true)
+      console.log('Loading files from storage...')
+      
       const response = await fetch('/api/files')
-      if (response.ok) {
-        const data = await response.json()
-        
+      const data = await response.json()
+      
+      console.log('API response:', data)
+      
+      if (data.success && data.files) {
         // Filter out any files that are currently being deleted
-        const filteredData = data.filter((file: FileData) => !deletingFiles.has(file.id))
+        const filteredData = data.files.filter((file: FileData) => !deletingFiles.has(file.id))
         
-        if (isRefresh) {
-          // For refresh, merge with existing state to avoid losing recently uploaded files
-          console.log('Refreshing files - merging with existing state')
-          console.log('Existing files:', data.length)
-          console.log('Filtered data:', filteredData.length)
-          setFiles(prevFiles => {
-            const existingIds = new Set(prevFiles.map(f => f.id))
-            const newFiles = filteredData.filter(f => !existingIds.has(f.id))
-            console.log('New files to add:', newFiles.length)
-            const result = [...prevFiles, ...newFiles]
-            console.log('Final file count:', result.length)
-            return result
-          })
-        } else {
-          // For initial load, replace the state
-          console.log('Initial load - replacing state with', filteredData.length, 'files')
-          setFiles(filteredData)
-        }
+        console.log('Setting files:', filteredData.length, 'files')
+        setFiles(filteredData)
         
         if (showNotification) {
           addNotification({
@@ -58,12 +69,26 @@ function HomeContent() {
           })
         }
       } else {
+        // Handle API error response
+        const errorMessage = data.error || 'Failed to load files from storage'
+        console.error('API error:', errorMessage)
+        
         addNotification({
           type: 'error',
           title: 'Error Loading Files',
-          message: 'Failed to load files from storage',
+          message: errorMessage,
           duration: 5000
         })
+        
+        // If it's a configuration error, show helpful message
+        if (errorMessage.includes('not configured')) {
+          addNotification({
+            type: 'error',
+            title: 'Configuration Required',
+            message: 'Please set up BLOB_READ_WRITE_TOKEN in your environment variables',
+            duration: 8000
+          })
+        }
       }
     } catch (error) {
       console.error('Error loading files:', error)
@@ -71,7 +96,7 @@ function HomeContent() {
       // Retry once if it's a network error and we haven't retried yet
       if (retryCount === 0) {
         console.log('Retrying file load...')
-        setTimeout(() => loadFiles(showNotification, 1, isRefresh), 1000)
+        setTimeout(() => loadFiles(showNotification, 1), 1000)
         return
       }
       
@@ -102,16 +127,10 @@ function HomeContent() {
       message: `${newFile.name} has been uploaded successfully`,
       duration: 4000
     })
-    
-    // Refresh files from storage after a longer delay to ensure file is available
-    setTimeout(() => {
-      console.log('Refreshing files from storage...')
-      loadFiles(false, 0, true) // Don't show notification for this refresh, use merge mode
-    }, 5000) // Increased delay to 5 seconds
   }
 
   const handleFileDelete = async (fileId: string) => {
-    const fileToDelete = files.find(f => f.id === fileId)
+    const fileToDelete = files.find((f: FileData) => f.id === fileId)
     
     // Prevent multiple deletion attempts
     if (deletingFiles.has(fileId)) {
@@ -121,7 +140,7 @@ function HomeContent() {
     setDeletingFiles(prev => new Set(prev).add(fileId))
     
     // IMMEDIATELY remove from UI for instant feedback
-    setFiles(prev => prev.filter(file => file.id !== fileId))
+    setFiles(prev => prev.filter((file: FileData) => file.id !== fileId))
     
     // Add a timeout to clean up deleting state in case of issues
     const cleanupTimeout = setTimeout(() => {
@@ -155,16 +174,12 @@ function HomeContent() {
             message: `${fileToDelete?.name || 'File'} has been deleted successfully`,
             duration: 4000
           })
-          // Refresh files from storage to ensure consistency
-          setTimeout(() => {
-            loadFiles(false, 0, true) // Don't show notification for this refresh, use merge mode
-            // Clean up deleting state after refresh
-            setDeletingFiles(prev => {
-              const newSet = new Set(prev)
-              newSet.delete(fileId)
-              return newSet
-            })
-          }, 2000)
+          // Clean up deleting state
+          setDeletingFiles(prev => {
+            const newSet = new Set(prev)
+            newSet.delete(fileId)
+            return newSet
+          })
         } else {
           // If deletion failed, add the file back to the UI
           setFiles(prev => [fileToDelete!, ...prev])
@@ -207,7 +222,7 @@ function HomeContent() {
     }
   }
 
-  const filteredFiles = files.filter(file => {
+  const filteredFiles = files.filter((file: FileData) => {
     const fileDate = new Date(file.uploadedAt)
     return fileDate.toDateString() === selectedDate.toDateString()
   })
@@ -234,15 +249,6 @@ function HomeContent() {
               <h1 className="text-xl font-semibold text-gray-900">File Storage</h1>
             </div>
             <div className="flex items-center space-x-4">
-              <button
-                onClick={() => loadFiles()}
-                disabled={loading}
-                className="flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                title="Refresh files"
-              >
-                <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-                <span>Refresh</span>
-              </button>
               <button
                 onClick={() => setView('calendar')}
                 className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium ${

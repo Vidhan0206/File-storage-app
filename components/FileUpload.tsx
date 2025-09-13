@@ -34,21 +34,20 @@ export default function FileUpload({ onFileUpload }: FileUploadProps) {
         })
 
         if (response.ok) {
-          const fileData = await response.json()
-          console.log('Upload response data:', fileData)
+          const responseData = await response.json()
+          console.log('Upload response data:', responseData)
           
-          // Verify the file data is complete
-          if (fileData.id && fileData.name && fileData.url) {
-            console.log('Calling onFileUpload with:', fileData)
-            onFileUpload(fileData)
+          if (responseData.success && responseData.id && responseData.name && responseData.url) {
+            console.log('Calling onFileUpload with:', responseData)
+            onFileUpload(responseData)
             successCount++
           } else {
-            console.error('Incomplete file data received:', fileData)
+            console.error('Upload failed:', responseData)
             errorCount++
             addNotification({
               type: 'error',
               title: 'Upload Failed',
-              message: `Incomplete data received for ${file.name}`,
+              message: responseData.error || `Failed to upload ${file.name}`,
               duration: 5000
             })
           }
