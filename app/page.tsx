@@ -20,7 +20,7 @@ function HomeContent() {
     loadFiles()
   }, [])
 
-  const loadFiles = async (showNotification = true, retryCount = 0) => {
+  const loadFiles = async (showNotification = true, retryCount = 0, isRefresh = false) => {
     try {
       setLoading(true)
       const response = await fetch('/api/files')
@@ -30,7 +30,25 @@ function HomeContent() {
         // Filter out any files that are currently being deleted
         const filteredData = data.filter((file: FileData) => !deletingFiles.has(file.id))
         
-        setFiles(filteredData)
+        if (isRefresh) {
+          // For refresh, merge with existing state to avoid losing recently uploaded files
+          console.log('Refreshing files - merging with existing state')
+          console.log('Existing files:', data.length)
+          console.log('Filtered data:', filteredData.length)
+          setFiles(prevFiles => {
+            const existingIds = new Set(prevFiles.map(f => f.id))
+            const newFiles = filteredData.filter(f => !existingIds.has(f.id))
+            console.log('New files to add:', newFiles.length)
+            const result = [...prevFiles, ...newFiles]
+            console.log('Final file count:', result.length)
+            return result
+          })
+        } else {
+          // For initial load, replace the state
+          console.log('Initial load - replacing state with', filteredData.length, 'files')
+          setFiles(filteredData)
+        }
+        
         if (showNotification) {
           addNotification({
             type: 'info',
@@ -53,7 +71,7 @@ function HomeContent() {
       // Retry once if it's a network error and we haven't retried yet
       if (retryCount === 0) {
         console.log('Retrying file load...')
-        setTimeout(() => loadFiles(showNotification, 1), 1000)
+        setTimeout(() => loadFiles(showNotification, 1, isRefresh), 1000)
         return
       }
       
@@ -69,7 +87,15 @@ function HomeContent() {
   }
 
   const handleFileUpload = (newFile: FileData) => {
-    setFiles(prev => [newFile, ...prev])
+    console.log('handleFileUpload called with:', newFile)
+    console.log('Current files before adding:', files.length)
+    
+    setFiles(prev => {
+      const updated = [newFile, ...prev]
+      console.log('Files after adding new file:', updated.length)
+      return updated
+    })
+    
     addNotification({
       type: 'success',
       title: 'File Uploaded',
@@ -77,10 +103,11 @@ function HomeContent() {
       duration: 4000
     })
     
-    // Refresh files from storage after a short delay to ensure consistency
+    // Refresh files from storage after a longer delay to ensure file is available
     setTimeout(() => {
-      loadFiles(false) // Don't show notification for this refresh
-    }, 2000)
+      console.log('Refreshing files from storage...')
+      loadFiles(false, 0, true) // Don't show notification for this refresh, use merge mode
+    }, 5000) // Increased delay to 5 seconds
   }
 
   const handleFileDelete = async (fileId: string) => {
@@ -130,7 +157,7 @@ function HomeContent() {
           })
           // Refresh files from storage to ensure consistency
           setTimeout(() => {
-            loadFiles(false) // Don't show notification for this refresh
+            loadFiles(false, 0, true) // Don't show notification for this refresh, use merge mode
             // Clean up deleting state after refresh
             setDeletingFiles(prev => {
               const newSet = new Set(prev)

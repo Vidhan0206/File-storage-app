@@ -35,9 +35,11 @@ export default function FileUpload({ onFileUpload }: FileUploadProps) {
 
         if (response.ok) {
           const fileData = await response.json()
+          console.log('Upload response data:', fileData)
           
           // Verify the file data is complete
           if (fileData.id && fileData.name && fileData.url) {
+            console.log('Calling onFileUpload with:', fileData)
             onFileUpload(fileData)
             successCount++
           } else {
