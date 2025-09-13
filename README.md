@@ -19,17 +19,6 @@ A modern, responsive file storage application built with Next.js 14, featuring c
 - 🎯 **File Type Support** - HTML, PDF, Python, JavaScript, TypeScript, CSS, JSON, and more
 - 📊 **File Management** - Download, delete, and organize files easily
 
-## 🖼️ Screenshots
-
-### Calendar View
-![Calendar View](https://via.placeholder.com/800x400/4F46E5/FFFFFF?text=Calendar+View)
-
-### File Upload
-![File Upload](https://via.placeholder.com/800x400/10B981/FFFFFF?text=File+Upload+Interface)
-
-### List View
-![List View](https://via.placeholder.com/800x400/F59E0B/FFFFFF?text=File+List+View)
-
 ## 🚀 Quick Start
 
 ### Prerequisites
@@ -159,24 +148,4 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- [Next.js](https://nextjs.org/) for the amazing framework
-- [Vercel](https://vercel.com/) for hosting and blob storage
-- [Tailwind CSS](https://tailwindcss.com/) for beautiful styling
-- [Lucide](https://lucide.dev/) for beautiful icons
-
-## 📞 Support
-
-If you have any questions or need help, please:
-- Open an issue on GitHub
-- Check the documentation
-- Contact the maintainer
-
----
-
-⭐ **Star this repository if you found it helpful!**
+⭐ Made By Vidhan
