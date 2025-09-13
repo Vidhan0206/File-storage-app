@@ -5,9 +5,11 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const fileUrl = decodeURIComponent(params.id)
+  let fileUrl: string
   
   try {
+    fileUrl = decodeURIComponent(params.id)
+    
     // Check if BLOB_READ_WRITE_TOKEN is available
     if (!process.env.BLOB_READ_WRITE_TOKEN) {
       console.error('BLOB_READ_WRITE_TOKEN not found')
@@ -24,7 +26,7 @@ export async function DELETE(
     return NextResponse.json({ success: true, result })
   } catch (error) {
     console.error('Error deleting file:', error)
-    console.error('File URL that failed:', fileUrl)
+    console.error('File URL that failed:', fileUrl || 'unknown')
     return NextResponse.json({ 
       error: 'Failed to delete file', 
       details: error instanceof Error ? error.message : 'Unknown error' 
