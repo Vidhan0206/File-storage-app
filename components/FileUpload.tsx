@@ -15,23 +15,44 @@ export default function FileUpload({ onFileUpload }: FileUploadProps) {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
   const { addNotification } = useNotification()
 
-  const onDrop = useCallback(async (acceptedFiles: File[]) => {
-    if (acceptedFiles.length === 0) return
 
+  const onDrop = useCallback(async (acceptedFiles: File[], rejectedFiles: any[]) => {
+    console.log('onDrop called with:', { acceptedFiles: acceptedFiles.length, rejectedFiles: rejectedFiles.length })
+    
+    if (acceptedFiles.length === 0) {
+      console.log('No files accepted')
+      if (rejectedFiles.length > 0) {
+        console.log('Rejected files:', rejectedFiles)
+        addNotification({
+          type: 'error',
+          title: 'File Rejected',
+          message: 'Some files were rejected. Please check file type and size.',
+          duration: 5000
+        })
+      }
+      return
+    }
+
+    console.log('Starting upload process...')
     setUploading(true)
     let successCount = 0
     let errorCount = 0
     
     try {
       for (const file of acceptedFiles) {
+        console.log('Processing file:', file.name, 'Size:', file.size, 'Type:', file.type)
+        
         const formData = new FormData()
         formData.append('file', file)
         formData.append('date', selectedDate)
 
+        console.log('Sending upload request...')
         const response = await fetch('/api/upload', {
           method: 'POST',
           body: formData,
         })
+
+        console.log('Upload response status:', response.status)
 
         if (response.ok) {
           const responseData = await response.json()
@@ -52,13 +73,23 @@ export default function FileUpload({ onFileUpload }: FileUploadProps) {
             })
           }
         } else {
-          const errorData = await response.json()
-          console.error('Upload failed for file:', file.name, errorData)
+          console.error('Upload failed for file:', file.name, 'Status:', response.status)
+          let errorMessage = 'Unknown error'
+          
+          try {
+            const errorData = await response.json()
+            errorMessage = errorData.error || errorData.message || 'Unknown error'
+            console.error('Error details:', errorData)
+          } catch (parseError) {
+            console.error('Failed to parse error response:', parseError)
+            errorMessage = `Server error (${response.status})`
+          }
+          
           errorCount++
           addNotification({
             type: 'error',
             title: 'Upload Failed',
-            message: `Failed to upload ${file.name}: ${errorData.error || 'Unknown error'}`,
+            message: `Failed to upload ${file.name}: ${errorMessage}`,
             duration: 5000
           })
         }
@@ -93,20 +124,22 @@ export default function FileUpload({ onFileUpload }: FileUploadProps) {
     }
   }, [selectedDate, onFileUpload, addNotification])
 
+  const handleFileSelect = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files
+    if (!files || files.length === 0) return
+    
+    console.log('File input changed, files:', files.length)
+    const fileArray = Array.from(files)
+    
+    // Call onDrop with the selected files
+    await onDrop(fileArray, [])
+    
+    // Reset the input
+    event.target.value = ''
+  }, [onDrop])
+
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: {
-      'text/html': ['.html', '.htm'],
-      'application/pdf': ['.pdf'],
-      'text/x-python': ['.py'],
-      'text/plain': ['.txt'],
-      'application/json': ['.json'],
-      'text/css': ['.css'],
-      'text/javascript': ['.js'],
-      'text/typescript': ['.ts'],
-      'text/jsx': ['.jsx'],
-      'text/tsx': ['.tsx'],
-    },
     multiple: true,
   })
 
@@ -141,6 +174,16 @@ export default function FileUpload({ onFileUpload }: FileUploadProps) {
       >
         <input {...getInputProps()} disabled={uploading} />
         
+        {/* Fallback file input */}
+        <input
+          type="file"
+          multiple
+          onChange={handleFileSelect}
+          disabled={uploading}
+          className="hidden"
+          id="fallback-file-input"
+        />
+        
         {uploading ? (
           <div className="space-y-2">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
@@ -158,8 +201,15 @@ export default function FileUpload({ onFileUpload }: FileUploadProps) {
               </p>
             </div>
             <p className="text-xs text-gray-400">
-              Supports HTML, PDF, Python, and other text files
+              Supports all file types (max 10MB)
             </p>
+            <button
+              type="button"
+              onClick={() => document.getElementById('fallback-file-input')?.click()}
+              className="mt-2 px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            >
+              Select Files
+            </button>
           </div>
         )}
       </div>

@@ -23,10 +23,29 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
+    // Validate file size (max 10MB)
+    const maxSize = 10 * 1024 * 1024 // 10MB
+    if (file.size > maxSize) {
+      return NextResponse.json({ 
+        success: false,
+        error: 'File too large. Maximum size is 10MB.' 
+      }, { status: 400 })
+    }
+
+    // Validate file name
+    if (!file.name || file.name.trim() === '') {
+      return NextResponse.json({ 
+        success: false,
+        error: 'Invalid file name' 
+      }, { status: 400 })
+    }
+
     // Create a simple file path with timestamp
     const uploadDate = date ? new Date(date) : new Date()
     const timestamp = Date.now()
-    const fileName = `${timestamp}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`
+    // More permissive file name sanitization - keep spaces and most special chars
+    const sanitizedName = file.name.replace(/[<>:"/\\|?*]/g, '_')
+    const fileName = `${timestamp}-${sanitizedName}`
     const filePath = `uploads/${fileName}`
 
     console.log('Uploading file:', {
