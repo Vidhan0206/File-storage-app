@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
     console.log('File uploaded successfully:', {
       url: blob.url,
       pathname: blob.pathname,
-      size: blob.size,
+      fileSize: file.size,
       uploadedAt: new Date().toISOString()
     })
 
