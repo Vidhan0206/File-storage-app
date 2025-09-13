@@ -3,6 +3,11 @@ import { put } from '@vercel/blob'
 
 export async function POST(request: NextRequest) {
   try {
+    // Check if BLOB_READ_WRITE_TOKEN is available
+    if (!process.env.BLOB_READ_WRITE_TOKEN) {
+      return NextResponse.json({ error: 'Blob storage not configured' }, { status: 503 })
+    }
+
     const formData = await request.formData()
     const file = formData.get('file') as File
     const date = formData.get('date') as string
