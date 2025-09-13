@@ -4,6 +4,7 @@ import { useCallback, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { Upload, Calendar } from 'lucide-react'
 import { FileData } from '@/types/file'
+import { useNotification } from './Notification'
 
 interface FileUploadProps {
   onFileUpload: (file: FileData) => void
@@ -12,11 +13,14 @@ interface FileUploadProps {
 export default function FileUpload({ onFileUpload }: FileUploadProps) {
   const [uploading, setUploading] = useState(false)
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
+  const { addNotification } = useNotification()
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     if (acceptedFiles.length === 0) return
 
     setUploading(true)
+    let successCount = 0
+    let errorCount = 0
     
     try {
       for (const file of acceptedFiles) {
@@ -32,16 +36,48 @@ export default function FileUpload({ onFileUpload }: FileUploadProps) {
         if (response.ok) {
           const fileData = await response.json()
           onFileUpload(fileData)
+          successCount++
         } else {
-          console.error('Upload failed for file:', file.name)
+          const errorData = await response.json()
+          console.error('Upload failed for file:', file.name, errorData)
+          errorCount++
+          addNotification({
+            type: 'error',
+            title: 'Upload Failed',
+            message: `Failed to upload ${file.name}: ${errorData.error || 'Unknown error'}`,
+            duration: 5000
+          })
         }
+      }
+
+      // Show summary notification
+      if (successCount > 0 && errorCount === 0) {
+        addNotification({
+          type: 'success',
+          title: 'Upload Complete',
+          message: `Successfully uploaded ${successCount} file${successCount > 1 ? 's' : ''}`,
+          duration: 4000
+        })
+      } else if (successCount > 0 && errorCount > 0) {
+        addNotification({
+          type: 'info',
+          title: 'Upload Partial',
+          message: `Uploaded ${successCount} file${successCount > 1 ? 's' : ''}, ${errorCount} failed`,
+          duration: 5000
+        })
       }
     } catch (error) {
       console.error('Error uploading files:', error)
+      addNotification({
+        type: 'error',
+        title: 'Upload Error',
+        message: 'Network error while uploading files',
+        duration: 5000
+      })
     } finally {
       setUploading(false)
     }
-  }, [selectedDate, onFileUpload])
+  }, [selectedDate, onFileUpload, addNotification])
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,

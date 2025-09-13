@@ -37,20 +37,8 @@ export default function FileList({ files, onFileDelete }: FileListProps) {
       return sortOrder === 'asc' ? comparison : -comparison
     })
 
-  const handleFileDelete = async (fileId: string) => {
-    try {
-      const response = await fetch(`/api/files/${encodeURIComponent(fileId)}`, {
-        method: 'DELETE',
-      })
-
-      if (response.ok) {
-        onFileDelete(fileId)
-      } else {
-        console.error('Failed to delete file')
-      }
-    } catch (error) {
-      console.error('Error deleting file:', error)
-    }
+  const handleFileDelete = (fileId: string) => {
+    onFileDelete(fileId)
   }
 
   const handleDownload = (file: FileData) => {

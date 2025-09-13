@@ -5,13 +5,15 @@ import { Calendar, Upload, File, Calendar as CalendarIcon } from 'lucide-react'
 import FileUpload from '@/components/FileUpload'
 import CalendarView from '@/components/CalendarView'
 import FileList from '@/components/FileList'
+import { NotificationProvider, useNotification } from '@/components/Notification'
 import { FileData } from '@/types/file'
 
-export default function Home() {
+function HomeContent() {
   const [files, setFiles] = useState<FileData[]>([])
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
   const [view, setView] = useState<'calendar' | 'list'>('calendar')
   const [loading, setLoading] = useState(true)
+  const { addNotification } = useNotification()
 
   useEffect(() => {
     loadFiles()
@@ -19,13 +21,33 @@ export default function Home() {
 
   const loadFiles = async () => {
     try {
+      setLoading(true)
       const response = await fetch('/api/files')
       if (response.ok) {
         const data = await response.json()
         setFiles(data)
+        addNotification({
+          type: 'info',
+          title: 'Files Loaded',
+          message: `Loaded ${data.length} files successfully`,
+          duration: 3000
+        })
+      } else {
+        addNotification({
+          type: 'error',
+          title: 'Error Loading Files',
+          message: 'Failed to load files from storage',
+          duration: 5000
+        })
       }
     } catch (error) {
       console.error('Error loading files:', error)
+      addNotification({
+        type: 'error',
+        title: 'Error Loading Files',
+        message: 'Network error while loading files',
+        duration: 5000
+      })
     } finally {
       setLoading(false)
     }
@@ -33,10 +55,47 @@ export default function Home() {
 
   const handleFileUpload = (newFile: FileData) => {
     setFiles(prev => [newFile, ...prev])
+    addNotification({
+      type: 'success',
+      title: 'File Uploaded',
+      message: `${newFile.name} has been uploaded successfully`,
+      duration: 4000
+    })
   }
 
-  const handleFileDelete = (fileId: string) => {
-    setFiles(prev => prev.filter(file => file.id !== fileId))
+  const handleFileDelete = async (fileId: string) => {
+    try {
+      const response = await fetch(`/api/files/${encodeURIComponent(fileId)}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        const fileToDelete = files.find(f => f.id === fileId)
+        setFiles(prev => prev.filter(file => file.id !== fileId))
+        addNotification({
+          type: 'success',
+          title: 'File Deleted',
+          message: `${fileToDelete?.name || 'File'} has been deleted successfully`,
+          duration: 4000
+        })
+      } else {
+        const errorData = await response.json()
+        addNotification({
+          type: 'error',
+          title: 'Delete Failed',
+          message: errorData.error || 'Failed to delete file',
+          duration: 5000
+        })
+      }
+    } catch (error) {
+      console.error('Error deleting file:', error)
+      addNotification({
+        type: 'error',
+        title: 'Delete Failed',
+        message: 'Network error while deleting file',
+        duration: 5000
+      })
+    }
   }
 
   const filteredFiles = files.filter(file => {
@@ -115,5 +174,13 @@ export default function Home() {
         )}
       </main>
     </div>
+  )
+}
+
+export default function Home() {
+  return (
+    <NotificationProvider>
+      <HomeContent />
+    </NotificationProvider>
   )
 }
