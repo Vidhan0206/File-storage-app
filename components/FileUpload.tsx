@@ -35,8 +35,21 @@ export default function FileUpload({ onFileUpload }: FileUploadProps) {
 
         if (response.ok) {
           const fileData = await response.json()
-          onFileUpload(fileData)
-          successCount++
+          
+          // Verify the file data is complete
+          if (fileData.id && fileData.name && fileData.url) {
+            onFileUpload(fileData)
+            successCount++
+          } else {
+            console.error('Incomplete file data received:', fileData)
+            errorCount++
+            addNotification({
+              type: 'error',
+              title: 'Upload Failed',
+              message: `Incomplete data received for ${file.name}`,
+              duration: 5000
+            })
+          }
         } else {
           const errorData = await response.json()
           console.error('Upload failed for file:', file.name, errorData)

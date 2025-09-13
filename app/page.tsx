@@ -19,7 +19,7 @@ function HomeContent() {
     loadFiles()
   }, [])
 
-  const loadFiles = async (showNotification = true) => {
+  const loadFiles = async (showNotification = true, retryCount = 0) => {
     try {
       setLoading(true)
       const response = await fetch('/api/files')
@@ -44,6 +44,14 @@ function HomeContent() {
       }
     } catch (error) {
       console.error('Error loading files:', error)
+      
+      // Retry once if it's a network error and we haven't retried yet
+      if (retryCount === 0) {
+        console.log('Retrying file load...')
+        setTimeout(() => loadFiles(showNotification, 1), 1000)
+        return
+      }
+      
       addNotification({
         type: 'error',
         title: 'Error Loading Files',
@@ -63,6 +71,11 @@ function HomeContent() {
       message: `${newFile.name} has been uploaded successfully`,
       duration: 4000
     })
+    
+    // Refresh files from storage after a short delay to ensure consistency
+    setTimeout(() => {
+      loadFiles(false) // Don't show notification for this refresh
+    }, 2000)
   }
 
   const handleFileDelete = async (fileId: string) => {

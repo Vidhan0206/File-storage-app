@@ -5,20 +5,68 @@ export async function GET() {
   try {
     // Check if BLOB_READ_WRITE_TOKEN is available
     if (!process.env.BLOB_READ_WRITE_TOKEN) {
+      console.log('BLOB_READ_WRITE_TOKEN not found, returning empty array')
       return NextResponse.json([])
     }
 
+    console.log('Fetching files from blob storage...')
     const { blobs } = await list()
+    console.log(`Found ${blobs.length} blobs in storage`)
     
-    const files = blobs.map(blob => ({
-      id: blob.url,
-      name: blob.pathname.split('/').pop() || 'Unknown',
-      url: blob.url,
-      size: blob.size,
-      type: 'application/octet-stream',
-      uploadedAt: blob.uploadedAt.toISOString()
-    }))
+    const files = blobs.map(blob => {
+      // Extract file extension to determine MIME type
+      const fileName = blob.pathname.split('/').pop() || 'Unknown'
+      const fileExtension = fileName.split('.').pop()?.toLowerCase() || ''
+      
+      // Map file extensions to MIME types
+      let mimeType = 'application/octet-stream'
+      switch (fileExtension) {
+        case 'html':
+        case 'htm':
+          mimeType = 'text/html'
+          break
+        case 'pdf':
+          mimeType = 'application/pdf'
+          break
+        case 'py':
+          mimeType = 'text/x-python'
+          break
+        case 'txt':
+          mimeType = 'text/plain'
+          break
+        case 'json':
+          mimeType = 'application/json'
+          break
+        case 'css':
+          mimeType = 'text/css'
+          break
+        case 'js':
+          mimeType = 'text/javascript'
+          break
+        case 'ts':
+          mimeType = 'text/typescript'
+          break
+        case 'jsx':
+          mimeType = 'text/jsx'
+          break
+        case 'tsx':
+          mimeType = 'text/tsx'
+          break
+        default:
+          mimeType = 'application/octet-stream'
+      }
+      
+      return {
+        id: blob.url,
+        name: fileName,
+        url: blob.url,
+        size: blob.size,
+        type: mimeType,
+        uploadedAt: blob.uploadedAt.toISOString()
+      }
+    })
 
+    console.log(`Returning ${files.length} files to client`)
     return NextResponse.json(files)
   } catch (error) {
     console.error('Error fetching files:', error)

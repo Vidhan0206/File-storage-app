@@ -26,8 +26,23 @@ export async function POST(request: NextRequest) {
     const fileName = `${Date.now()}-${file.name}`
     const filePath = `${folderPath}/${fileName}`
 
+    console.log('Uploading file:', {
+      originalName: file.name,
+      filePath,
+      fileSize: file.size,
+      fileType: file.type,
+      uploadDate: uploadDate.toISOString()
+    })
+
     const blob = await put(filePath, file, {
       access: 'public',
+    })
+
+    console.log('File uploaded successfully:', {
+      url: blob.url,
+      pathname: blob.pathname,
+      size: blob.size,
+      uploadedAt: blob.uploadedAt
     })
 
     const fileData = {
