@@ -48,7 +48,15 @@ function HomeContent() {
       setLoading(true)
       console.log('Loading files from storage...')
       
-      const response = await fetch('/api/files')
+      // Add cache-busting parameter to prevent stale data
+      const cacheBuster = `?t=${Date.now()}`
+      const response = await fetch(`/api/files${cacheBuster}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      })
       const data = await response.json()
       
       console.log('API response:', data)
@@ -160,28 +168,46 @@ function HomeContent() {
     })
     
     try {
+      console.log('Sending delete request for file:', fileId)
       const response = await fetch(`/api/files/${encodeURIComponent(fileId)}`, {
         method: 'DELETE',
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
       })
 
+      console.log('Delete response status:', response.status)
+      
       if (response.ok) {
         const result = await response.json()
+        console.log('Delete result:', result)
         
         if (result.success) {
+          console.log('File deletion confirmed by API')
           addNotification({
             type: 'success',
             title: 'File Deleted',
             message: `${fileToDelete?.name || 'File'} has been deleted successfully`,
             duration: 4000
           })
+          
+          // Wait a bit longer to ensure deletion propagates through Vercel Blob
+          console.log('Waiting for deletion to propagate...')
+          await new Promise(resolve => setTimeout(resolve, 3000))
+          
           // Clean up deleting state
           setDeletingFiles(prev => {
             const newSet = new Set(prev)
             newSet.delete(fileId)
             return newSet
           })
+          
+          console.log('Deletion process completed')
         } else {
           // If deletion failed, add the file back to the UI
+          console.log('File deletion failed:', result.error)
           setFiles(prev => [fileToDelete!, ...prev])
           addNotification({
             type: 'error',
@@ -192,6 +218,7 @@ function HomeContent() {
         }
       } else {
         // If deletion failed, add the file back to the UI
+        console.log('Delete request failed with status:', response.status)
         setFiles(prev => [fileToDelete!, ...prev])
         const errorData = await response.json()
         addNotification({

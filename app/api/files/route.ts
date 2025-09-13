@@ -72,17 +72,35 @@ export async function GET() {
     })
 
     console.log(`Returning ${files.length} files to client`)
-    return NextResponse.json({
+    
+    // Create response with cache-busting headers
+    const response = NextResponse.json({
       success: true,
       files: files
     })
+    
+    // Add cache-busting headers to prevent stale data
+    response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate')
+    response.headers.set('Pragma', 'no-cache')
+    response.headers.set('Expires', '0')
+    
+    return response
   } catch (error) {
     console.error('Error fetching files:', error)
-    return NextResponse.json({
+    
+    // Create error response with cache-busting headers
+    const response = NextResponse.json({
       success: false,
       error: 'Failed to fetch files',
       details: error instanceof Error ? error.message : 'Unknown error',
       files: []
     })
+    
+    // Add cache-busting headers to prevent stale data
+    response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate')
+    response.headers.set('Pragma', 'no-cache')
+    response.headers.set('Expires', '0')
+    
+    return response
   }
 }
