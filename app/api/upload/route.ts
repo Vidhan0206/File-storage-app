@@ -43,7 +43,9 @@ export async function POST(request: NextRequest) {
 
     console.log('File uploaded successfully:', {
       url: blob.url,
-      pathname: blob.pathname
+      pathname: blob.pathname,
+      size: file.size,
+      type: file.type
     })
 
     const fileData = {
@@ -55,12 +57,20 @@ export async function POST(request: NextRequest) {
       uploadedAt: uploadDate.toISOString()
     }
 
+    console.log('Returning file data:', fileData)
+
     return NextResponse.json({
       success: true,
       ...fileData
     })
   } catch (error) {
     console.error('Error uploading file:', error)
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : undefined
+    })
+    
     return NextResponse.json({ 
       success: false,
       error: 'Failed to upload file',

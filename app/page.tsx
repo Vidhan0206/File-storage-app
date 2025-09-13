@@ -13,7 +13,6 @@ function HomeContent() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
   const [view, setView] = useState<'calendar' | 'list'>('calendar')
   const [loading, setLoading] = useState(true)
-  const [deletingFiles, setDeletingFiles] = useState<Set<string>>(new Set())
   const { addNotification } = useNotification()
 
   useEffect(() => {
@@ -34,12 +33,15 @@ function HomeContent() {
       loadFiles(false) // Don't show notification for auto-refresh
     }
 
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-    window.addEventListener('focus', handleFocus)
-    
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange)
-      window.removeEventListener('focus', handleFocus)
+    // Only add listeners if we're in the browser
+    if (typeof window !== 'undefined') {
+      document.addEventListener('visibilitychange', handleVisibilityChange)
+      window.addEventListener('focus', handleFocus)
+      
+      return () => {
+        document.removeEventListener('visibilitychange', handleVisibilityChange)
+        window.removeEventListener('focus', handleFocus)
+      }
     }
   }, [])
 
@@ -62,17 +64,14 @@ function HomeContent() {
       console.log('API response:', data)
       
       if (data.success && data.files) {
-        // Filter out any files that are currently being deleted
-        const filteredData = data.files.filter((file: FileData) => !deletingFiles.has(file.id))
-        
-        console.log('Setting files:', filteredData.length, 'files')
-        setFiles(filteredData)
+        console.log('Setting files:', data.files.length, 'files')
+        setFiles(data.files)
         
         if (showNotification) {
           addNotification({
             type: 'info',
             title: 'Files Loaded',
-            message: `Loaded ${filteredData.length} files successfully`,
+            message: `Loaded ${data.files.length} files successfully`,
             duration: 3000
           })
         }
@@ -137,117 +136,6 @@ function HomeContent() {
     })
   }
 
-  const handleFileDelete = async (fileId: string) => {
-    const fileToDelete = files.find((f: FileData) => f.id === fileId)
-    
-    // Prevent multiple deletion attempts
-    if (deletingFiles.has(fileId)) {
-      return
-    }
-    
-    setDeletingFiles(prev => new Set(prev).add(fileId))
-    
-    // IMMEDIATELY remove from UI for instant feedback
-    setFiles(prev => prev.filter((file: FileData) => file.id !== fileId))
-    
-    // Add a timeout to clean up deleting state in case of issues
-    const cleanupTimeout = setTimeout(() => {
-      setDeletingFiles(prev => {
-        const newSet = new Set(prev)
-        newSet.delete(fileId)
-        return newSet
-      })
-    }, 10000) // 10 second timeout
-    
-    // Show immediate feedback that deletion is in progress
-    addNotification({
-      type: 'info',
-      title: 'Deleting File',
-      message: `Deleting ${fileToDelete?.name || 'file'}...`,
-      duration: 2000
-    })
-    
-    try {
-      console.log('Sending delete request for file:', fileId)
-      const response = await fetch(`/api/files/${encodeURIComponent(fileId)}`, {
-        method: 'DELETE',
-        cache: 'no-store',
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
-        }
-      })
-
-      console.log('Delete response status:', response.status)
-      
-      if (response.ok) {
-        const result = await response.json()
-        console.log('Delete result:', result)
-        
-        if (result.success) {
-          console.log('File deletion confirmed by API')
-          addNotification({
-            type: 'success',
-            title: 'File Deleted',
-            message: `${fileToDelete?.name || 'File'} has been deleted successfully`,
-            duration: 4000
-          })
-          
-          // Wait a bit longer to ensure deletion propagates through Vercel Blob
-          console.log('Waiting for deletion to propagate...')
-          await new Promise(resolve => setTimeout(resolve, 3000))
-          
-          // Clean up deleting state
-          setDeletingFiles(prev => {
-            const newSet = new Set(prev)
-            newSet.delete(fileId)
-            return newSet
-          })
-          
-          console.log('Deletion process completed')
-        } else {
-          // If deletion failed, add the file back to the UI
-          console.log('File deletion failed:', result.error)
-          setFiles(prev => [fileToDelete!, ...prev])
-          addNotification({
-            type: 'error',
-            title: 'Delete Failed',
-            message: result.error || 'File deletion was not successful',
-            duration: 5000
-          })
-        }
-      } else {
-        // If deletion failed, add the file back to the UI
-        console.log('Delete request failed with status:', response.status)
-        setFiles(prev => [fileToDelete!, ...prev])
-        const errorData = await response.json()
-        addNotification({
-          type: 'error',
-          title: 'Delete Failed',
-          message: errorData.error || 'Failed to delete file',
-          duration: 5000
-        })
-      }
-    } catch (error) {
-      // If deletion failed, add the file back to the UI
-      setFiles(prev => [fileToDelete!, ...prev])
-      console.error('Error deleting file:', error)
-      addNotification({
-        type: 'error',
-        title: 'Delete Failed',
-        message: 'Network error while deleting file',
-        duration: 5000
-      })
-    } finally {
-      // Clear the timeout and remove from deleting set
-      clearTimeout(cleanupTimeout)
-      setDeletingFiles(prev => {
-        const newSet = new Set(prev)
-        newSet.delete(fileId)
-        return newSet
-      })
-    }
-  }
 
   const filteredFiles = files.filter((file: FileData) => {
     const fileDate = new Date(file.uploadedAt)
@@ -315,14 +203,10 @@ function HomeContent() {
             files={files}
             selectedDate={selectedDate}
             onDateSelect={setSelectedDate}
-            onFileDelete={handleFileDelete}
-            deletingFiles={deletingFiles}
           />
         ) : (
           <FileList
             files={files}
-            onFileDelete={handleFileDelete}
-            deletingFiles={deletingFiles}
           />
         )}
       </main>

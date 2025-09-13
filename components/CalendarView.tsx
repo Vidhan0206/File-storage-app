@@ -2,18 +2,16 @@
 
 import { useState } from 'react'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths } from 'date-fns'
-import { ChevronLeft, ChevronRight, File, Download, Trash2 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, File, Download } from 'lucide-react'
 import { FileData } from '@/types/file'
 
 interface CalendarViewProps {
   files: FileData[]
   selectedDate: Date
   onDateSelect: (date: Date) => void
-  onFileDelete: (fileId: string) => void
-  deletingFiles: Set<string>
 }
 
-export default function CalendarView({ files, selectedDate, onDateSelect, onFileDelete, deletingFiles }: CalendarViewProps) {
+export default function CalendarView({ files, selectedDate, onDateSelect }: CalendarViewProps) {
   const [currentMonth, setCurrentMonth] = useState(selectedDate)
 
   const monthStart = startOfMonth(currentMonth)
@@ -27,9 +25,6 @@ export default function CalendarView({ files, selectedDate, onDateSelect, onFile
     })
   }
 
-  const handleFileDelete = (fileId: string) => {
-    onFileDelete(fileId)
-  }
 
   const handleDownload = (file: FileData) => {
     const link = document.createElement('a')
@@ -161,18 +156,6 @@ export default function CalendarView({ files, selectedDate, onDateSelect, onFile
                         title="Download"
                       >
                         <Download className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handleFileDelete(file.id)}
-                        disabled={deletingFiles.has(file.id)}
-                        className={`p-1 transition-colors ${
-                          deletingFiles.has(file.id)
-                            ? 'text-gray-300 cursor-not-allowed'
-                            : 'text-gray-400 hover:text-red-600'
-                        }`}
-                        title={deletingFiles.has(file.id) ? 'Deleting...' : 'Delete'}
-                      >
-                        <Trash2 className={`h-4 w-4 ${deletingFiles.has(file.id) ? 'animate-pulse' : ''}`} />
                       </button>
                     </div>
                   </div>

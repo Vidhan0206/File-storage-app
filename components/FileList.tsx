@@ -2,16 +2,14 @@
 
 import { useState } from 'react'
 import { format } from 'date-fns'
-import { File, Download, Trash2, Search, Calendar } from 'lucide-react'
+import { File, Download, Search, Calendar } from 'lucide-react'
 import { FileData } from '@/types/file'
 
 interface FileListProps {
   files: FileData[]
-  onFileDelete: (fileId: string) => void
-  deletingFiles: Set<string>
 }
 
-export default function FileList({ files, onFileDelete, deletingFiles }: FileListProps) {
+export default function FileList({ files }: FileListProps) {
   const [searchTerm, setSearchTerm] = useState('')
   const [sortBy, setSortBy] = useState<'name' | 'date' | 'size'>('date')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
@@ -38,9 +36,6 @@ export default function FileList({ files, onFileDelete, deletingFiles }: FileLis
       return sortOrder === 'asc' ? comparison : -comparison
     })
 
-  const handleFileDelete = (fileId: string) => {
-    onFileDelete(fileId)
-  }
 
   const handleDownload = (file: FileData) => {
     const link = document.createElement('a')
@@ -150,18 +145,6 @@ export default function FileList({ files, onFileDelete, deletingFiles }: FileLis
                     title="Download"
                   >
                     <Download className="h-5 w-5" />
-                  </button>
-                  <button
-                    onClick={() => handleFileDelete(file.id)}
-                    disabled={deletingFiles.has(file.id)}
-                    className={`p-2 rounded-md transition-colors ${
-                      deletingFiles.has(file.id)
-                        ? 'text-gray-300 cursor-not-allowed'
-                        : 'text-gray-400 hover:text-red-600 hover:bg-red-50'
-                    }`}
-                    title={deletingFiles.has(file.id) ? 'Deleting...' : 'Delete'}
-                  >
-                    <Trash2 className={`h-5 w-5 ${deletingFiles.has(file.id) ? 'animate-pulse' : ''}`} />
                   </button>
                 </div>
               </div>

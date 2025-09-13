@@ -1,6 +1,6 @@
 # 📁 File Storage App
 
-A modern, responsive file storage application built with Next.js 14, featuring calendar-based organization and cloud storage with Vercel Blob.
+A modern, responsive file storage application built with Next.js 14, featuring calendar-based organization and cloud storage with Vercel Blob. Upload, organize, and access your files with ease.
 
 ![Next.js](https://img.shields.io/badge/Next.js-14-black?style=for-the-badge&logo=next.js)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=for-the-badge&logo=typescript)
@@ -17,7 +17,7 @@ A modern, responsive file storage application built with Next.js 14, featuring c
 - 🔍 **Smart Search** - Find files quickly with search functionality
 - 📱 **Mobile Responsive** - Works perfectly on all devices
 - 🎯 **File Type Support** - HTML, PDF, Python, JavaScript, TypeScript, CSS, JSON, and more
-- 📊 **File Management** - Download, delete, and organize files easily
+- 📊 **File Management** - Download and organize files easily
 
 ## 🚀 Quick Start
 
@@ -75,7 +75,6 @@ file-storage-app/
 ├── app/
 │   ├── api/
 │   │   ├── files/
-│   │   │   └── [id]/
 │   │   └── upload/
 │   ├── globals.css
 │   ├── layout.tsx
@@ -83,7 +82,8 @@ file-storage-app/
 ├── components/
 │   ├── FileUpload.tsx
 │   ├── CalendarView.tsx
-│   └── FileList.tsx
+│   ├── FileList.tsx
+│   └── Notification.tsx
 ├── types/
 │   └── file.ts
 ├── package.json
@@ -129,14 +129,13 @@ file-storage-app/
 ### File Management
 - Search files by name
 - Sort by name, date, or size
-- Download or delete files directly
+- Download files directly
 - Switch between calendar and list views
 
 ## 🔧 API Endpoints
 
-- `GET /api/files` - Retrieve all files
-- `POST /api/upload` - Upload new file
-- `DELETE /api/files/[id]` - Delete file by ID
+- `GET /api/files` - Retrieve all files from storage
+- `POST /api/upload` - Upload new file to storage
 
 ## 🤝 Contributing
 

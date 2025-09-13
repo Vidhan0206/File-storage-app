@@ -16,11 +16,25 @@ export async function GET() {
     console.log('Fetching files from blob storage...')
     const { blobs } = await list()
     console.log(`Found ${blobs.length} blobs in storage`)
-    console.log('Blob details:', blobs.map(b => ({ url: b.url, pathname: b.pathname, size: b.size })))
+    console.log('Blob details:', blobs.map(b => ({ 
+      url: b.url, 
+      pathname: b.pathname, 
+      size: b.size,
+      uploadedAt: b.uploadedAt.toISOString()
+    })))
     
     const files = blobs.map(blob => {
-      // Extract file extension to determine MIME type
-      const fileName = blob.pathname.split('/').pop() || 'Unknown'
+      // Extract file name from pathname (remove timestamp prefix)
+      const pathParts = blob.pathname.split('/')
+      const fileNameWithTimestamp = pathParts[pathParts.length - 1] || 'Unknown'
+      
+      // Remove timestamp prefix (format: timestamp-originalname)
+      // Find the first dash and take everything after it
+      const dashIndex = fileNameWithTimestamp.indexOf('-')
+      const fileName = dashIndex > 0 
+        ? fileNameWithTimestamp.substring(dashIndex + 1)
+        : fileNameWithTimestamp
+      
       const fileExtension = fileName.split('.').pop()?.toLowerCase() || ''
       
       // Map file extensions to MIME types
@@ -61,7 +75,7 @@ export async function GET() {
           mimeType = 'application/octet-stream'
       }
       
-      return {
+      const fileData = {
         id: blob.url,
         name: fileName,
         url: blob.url,
@@ -69,6 +83,15 @@ export async function GET() {
         type: mimeType,
         uploadedAt: blob.uploadedAt.toISOString()
       }
+      
+      console.log('Processed file:', {
+        originalPath: blob.pathname,
+        extractedName: fileName,
+        mimeType: mimeType,
+        size: blob.size
+      })
+      
+      return fileData
     })
 
     console.log(`Returning ${files.length} files to client`)
