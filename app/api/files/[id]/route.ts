@@ -5,8 +5,8 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  let fileUrl: string
-  
+  let fileUrl = 'unknown'; // Initialize to ensure it's always defined
+
   try {
     fileUrl = decodeURIComponent(params.id)
     
@@ -26,7 +26,7 @@ export async function DELETE(
     return NextResponse.json({ success: true, result })
   } catch (error) {
     console.error('Error deleting file:', error)
-    console.error('File URL that failed:', fileUrl || 'unknown')
+    console.error('File URL that failed:', fileUrl) // fileUrl is always defined
     return NextResponse.json({ 
       error: 'Failed to delete file', 
       details: error instanceof Error ? error.message : 'Unknown error' 
