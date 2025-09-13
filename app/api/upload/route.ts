@@ -40,8 +40,7 @@ export async function POST(request: NextRequest) {
 
     console.log('File uploaded successfully:', {
       url: blob.url,
-      pathname: blob.pathname,
-      uploadedAt: blob.uploadedAt
+      pathname: blob.pathname
     })
 
     const fileData = {
